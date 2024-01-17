@@ -36,6 +36,8 @@
   xmlns:str="http://exslt.org/strings"
   version="1.0"
   extension-element-prefixes="func str"
+  xmlns:i18n="i18n:*"
+  exclude-result-prefixes="i18n"
 >
   <xsl:output
     method="html"
@@ -113,9 +115,33 @@
     </tr>
   </xsl:template>
   <xsl:param name="root" />
+
+  <i18n:zh-cn
+    folders=" 个目录，"
+    files=" 个文件"
+    timing="最近修改时间"
+    filename="文件名"
+    size="大小"
+    root="根目录"
+  />
+  <i18n:en-us
+    folders=" folders, "
+    files=" files"
+    timing="Last modified"
+    filename="File name"
+    size="Size"
+    root="root"
+  />
+
+  <xsl:param name="lang" select="'en-us'" />
+
+  <xsl:variable name="i18n" select="document('')//*[local-name() = $lang]" />
+
   <xsl:template match="/">
     <html>
-      <xsl:attribute name="lang">zh-cn-hans</xsl:attribute>
+      <xsl:attribute name="lang">
+        <xsl:value-of select="$lang" />
+      </xsl:attribute>
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -157,6 +183,10 @@
             color: inherit;
           }
 
+          a:hover {
+            opacity: 0.5;
+          }
+
           table {
             overflow: hidden;
             width: 100%;
@@ -176,7 +206,6 @@
 
           .name {
             text-align: left;
-            word-break: break-all;
           }
 
           .time {
@@ -189,6 +218,11 @@
             white-space: nowrap;
           }
 
+          div {
+            display: flex;
+            justify-content: space-between;
+          }
+
           td > svg {
             vertical-align: middle;
           }
@@ -199,6 +233,16 @@
 
           th {
             background-color: lightgrey;
+          }
+
+          @media (max-width: 767px) {
+            tr > *:nth-child(3) {
+              display: none;
+            }
+
+            body {
+              margin: 0;
+            }
           }
 
           @media (min-width: 769px) {
@@ -234,27 +278,30 @@
         <table>
           <thead>
             <tr>
-              <td colspan="2">
-                <ul></ul>
-              </td>
-              <td colspan="2" class="size">
-                <xsl:value-of select="count(//directory)" />
-                个目录，<xsl:value-of select="count(//file)" />
-                个文件
+              <td colspan="4">
+                <div>
+                  <ul></ul>
+                  <span class="size">
+                    <xsl:value-of select="count(//directory)" />
+                    <xsl:value-of select="$i18n/@folders" />
+                    <xsl:value-of select="count(//file)" />
+                    <xsl:value-of select="$i18n/@files" />
+                  </span>
+                </div>
               </td>
             </tr>
             <tr>
-              <th></th>
-              <th class="name">文件名</th>
-              <th class="time">最近修改时间</th>
-              <th class="size">大小</th>
+              <th class="icon">#</th>
+              <th class="name"><xsl:value-of select="$i18n/@filename" /></th>
+              <th class="time"><xsl:value-of select="$i18n/@timing" /></th>
+              <th class="size"><xsl:value-of select="$i18n/@size" /></th>
             </tr>
           </thead>
           <tbody>
             <xsl:apply-templates />
           </tbody>
         </table>
-        <svg style="display: none">
+        <svg hidden="hidden">
           <defs>
             <symbol id="icon-file" viewBox="0 0 16 16">
               <path
@@ -289,7 +336,8 @@
           urls.unshift(fake);
 
           const sets = urls.map((item, index, array) => ({
-            textContent: item === '' ? "根目录" : item,
+            textContent:
+              item === "" ? '<xsl:value-of select="$i18n/@root" />' : item,
             href: array.slice(0, index + 1).join("/") + "/",
           }));
 
